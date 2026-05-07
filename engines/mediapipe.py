@@ -1,11 +1,16 @@
+import os
 import numpy as np
 import cv2
 from PIL import Image
 from engines.base import TryOnEngine
 
+# MediaPipe 0.10.x 新 API 模型路径
+_MODEL_PATH = os.path.join(os.path.expanduser('~'), '.cache', 'mediapipe',
+                           'pose_landmarker_lite.task')
+
 
 class MediaPipeEngine(TryOnEngine):
-    """MediaPipe Pose 关键点引擎"""
+    """MediaPipe Pose 关键点引擎（v0.10.x tasks API）"""
 
     LEFT_SHOULDER = 11
     RIGHT_SHOULDER = 12
@@ -17,30 +22,52 @@ class MediaPipeEngine(TryOnEngine):
     RIGHT_WRIST = 16
 
     def __init__(self):
-        self._pose = None
+        self._landmarker = None
 
     @property
-    def pose(self):
-        if self._pose is None:
-            import mediapipe as mp
-            self._pose = mp.solutions.pose.Pose(
-                static_image_mode=True,
-                model_complexity=1,
-                enable_segmentation=False
-            )
-        return self._pose
+    def landmarker(self):
+        if self._landmarker is None and os.path.exists(_MODEL_PATH):
+            try:
+                from mediapipe.tasks.python.vision import (
+                    PoseLandmarker, PoseLandmarkerOptions, RunningMode
+                )
+                from mediapipe.tasks.python.core.base_options import BaseOptions
+
+                options = PoseLandmarkerOptions(
+                    base_options=BaseOptions(model_asset_path=_MODEL_PATH),
+                    running_mode=RunningMode.IMAGE,
+                    num_poses=1,
+                )
+                self._landmarker = PoseLandmarker.create_from_options(options)
+            except Exception:
+                self._landmarker = False  # 标记为失败，不再重试
+        return self._landmarker
 
     def _detect_keypoints(self, image):
         """返回 (keypoints_dict, image_width, image_height) 或 (None, None, None)"""
-        img_rgb = cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2RGB)
-        results = self.pose.process(img_rgb)
-        if not results.pose_landmarks:
+        if not self.landmarker or self.landmarker is False:
             return None, None, None
-        h, w = img_rgb.shape[:2]
-        kp = {}
-        for idx, lm in enumerate(results.pose_landmarks.landmark):
-            kp[idx] = (int(lm.x * w), int(lm.y * h))
-        return kp, w, h
+
+        try:
+            import mediapipe as mp
+
+            # 转为 MediaPipe Image
+            img_rgb = cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2RGB)
+            h, w = img_rgb.shape[:2]
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img_rgb)
+
+            result = self.landmarker.detect(mp_image)
+            if not result.pose_landmarks:
+                return None, None, None
+
+            # 取第一个检测到的人体
+            landmarks = result.pose_landmarks[0]
+            kp = {}
+            for idx, lm in enumerate(landmarks):
+                kp[idx] = (int(lm.x * w), int(lm.y * h))
+            return kp, w, h
+        except Exception:
+            return None, None, None
 
     def _get_region_for_category(self, keypoints, category, img_w, img_h):
 
