@@ -46,3 +46,37 @@ class TestRegister:
             'confirm_password': 'Different1'
         })
         assert response.status_code == 200  # stays on register page
+
+
+class TestLogin:
+    def test_login_page_loads(self, client):
+        response = client.get('/login')
+        assert response.status_code == 200
+
+    def test_login_success(self, client, app):
+        with app.app_context():
+            user = User(username='loginuser', email='login@test.com',
+                       email_verified=True)
+            user.set_password('Password1')
+            db.session.add(user)
+            db.session.commit()
+
+        response = client.post('/login', data={
+            'email': 'login@test.com',
+            'password': 'Password1'
+        })
+        assert response.status_code == 302  # redirect to main.index (or next)
+
+    def test_login_wrong_password(self, client, app):
+        with app.app_context():
+            user = User(username='wrongpw', email='wrongpw@test.com',
+                       email_verified=True)
+            user.set_password('correct')
+            db.session.add(user)
+            db.session.commit()
+
+        response = client.post('/login', data={
+            'email': 'wrongpw@test.com',
+            'password': 'wrongpassword'
+        })
+        assert '邮箱或密码错误' in response.data.decode('utf-8') or response.status_code != 302

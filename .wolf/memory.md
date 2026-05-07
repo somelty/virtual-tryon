@@ -27,3 +27,27 @@
 | 20:30 | Edited models/photo.py | modified set_active() | ~338 |
 | 20:30 | Edited models/photo.py | modified _deactivate_other_photos() | ~119 |
 | 20:32 | Edited models/photo.py | modified set_active() | ~374 |
+| 20:34 | Created .gitignore | — | ~6 |
+| 20:39 | Edited models/photo.py | — | ~0 |
+| 20:39 | Edited tests/test_models.py | modified test_create_photo() | ~525 |
+| HH:MM | Removed before_flush event listener from photo.py; rewrote test_only_one_active_photo to test set_active() directly; added test_set_active_returns_false_for_wrong_user | models/photo.py, tests/test_models.py | 8 tests PASS | ~300 |
+| 20:48 | Created tests/test_auth.py | — | ~500 |
+| 20:49 | Created app.py | — | ~268 |
+| 20:49 | Created blueprints/__init__.py | — | ~0 |
+| 20:49 | Created blueprints/auth.py | — | ~501 |
+| 20:49 | Created templates/register.html | — | ~210 |
+| 20:50 | Edited templates/register.html | "{{ url_for(" → "/login" | ~10 |
+| 20:51 | Edited blueprints/auth.py | 2→2 lines | ~30 |
+| 20:52 | All 4 registration tests pass, 8 model tests still pass | tests/test_auth.py, app.py, blueprints/auth.py | 12/12 PASS | ~500 |
+| 20:54 | Edited blueprints/auth.py | "auth.register" → "auth.login" | ~14 |
+| 20:54 | Edited templates/register.html | "/login" → "{{ url_for(" | ~12 |
+| 20:54 | Edited tests/test_auth.py | modified test_register_success() | ~104 |
+| 20:55 | Edited blueprints/auth.py | modified login() | ~67 |
+| 20:57 | Edited tests/test_auth.py | modified test_register_password_mismatch() | ~440 |
+| 20:57 | Created blueprints/auth.py | — | ~724 |
+| 20:57 | Created templates/login.html | — | ~190 |
+| 20:58 | Edited models/user.py | added 1 import(s) | ~46 |
+| 20:58 | Edited templates/login.html | 2→1 lines | ~17 |
+| 20:58 | Created blueprints/main.py | — | ~39 |
+| 20:58 | Edited app.py | added 1 import(s) | ~44 |
+| 20:58 | All 7 auth tests pass (4 register + 3 login) | blueprints/auth.py, templates/login.html, tests/test_auth.py, models/user.py, blueprints/main.py, app.py | 7/7 PASS | ~500 |

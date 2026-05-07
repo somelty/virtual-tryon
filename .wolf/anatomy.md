@@ -1,13 +1,14 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-07T12:32:34.860Z
-> Files: 525 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-07T12:58:50.609Z
+> Files: 532 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
+- `.gitignore` — Git ignore rules (~6 tok)
 - `安装扩展包.txt` (~116 tok)
 - `app_old.py` — Original app.py backup (~1128 tok)
-- `app.py` — create_app (~134 tok)
+- `app.py` — load_user, create_app (~290 tok)
 - `CLAUDE.md` — OpenWolf (~682 tok)
 - `config.py` — Declares Config (~193 tok)
 - `docs/superpowers/specs/2026-05-07-virtual-tryon-multi-user-design.md` (~332 tok)
@@ -22,6 +23,12 @@
 ## .claude/rules/
 
 - `openwolf.md` (~313 tok)
+
+## blueprints/
+
+- `__init__.py` (~0 tok)
+- `auth.py` — register, login, logout (~724 tok)
+- `main.py` — index (~39 tok)
 
 ## data/FashionMNIST/raw/
 
@@ -40,18 +47,21 @@
 
 - `__init__.py` (~45 tok)
 - `clothing.py` — Clothing: display_category (~161 tok)
-- `photo.py` — Photo: set_active (~374 tok)
-- `user.py` — User: set_password, check_password, get_active_photo, generate_verification_token + 1 more (~475 tok)
+- `photo.py` — Photo: set_active (~145 tok)
+- `user.py` — User(UserMixin): set_password, check_password, get_active_photo, generate_verification_token + 1 more (~518 tok)
 
 ## templates/
 
 - `index.html` — FitAI · 智能试衣 (~8215 tok)
+- `login.html` — 登录 - FitAI (~172 tok)
+- `register.html` — 注册 - FitAI (~210 tok)
 
 ## tests/
 
 - `__init__.py` (~0 tok)
 - `conftest.py` — app, client, runner, logged_in_user (~247 tok)
-- `test_models.py` — TestUserModel: test_create_user, test_username_unique, test_email_unique, test_create_photo + 3 more (~1109 tok)
+- `test_auth.py` — TestRegister: test_register_page_loads, test_register_success, test_register_duplicate_username, tes (~842 tok)
+- `test_models.py` — TestUserModel: test_create_user, test_username_unique, test_email_unique, test_create_photo + 5 more (~1630 tok)
 
 ## venv/
 
