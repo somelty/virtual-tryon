@@ -100,3 +100,20 @@ def delete(item_id):
     db.session.commit()
     flash('衣物已删除', 'info')
     return redirect(url_for('wardrobe.index'))
+
+
+@wardrobe_bp.route('/api/wardrobe-items')
+@login_required
+def api_items():
+    """返回当前用户的衣橱物品 JSON（供前端 AJAX 加载）"""
+    items = Clothing.query.filter_by(user_id=current_user.id).order_by(Clothing.uploaded_at.desc()).all()
+    return {
+        'items': [{
+            'id': i.id,
+            'filename': i.filename,
+            'category': i.category,
+            'manual_category': i.manual_category,
+            'display_category': i.display_category(),
+            'user_id': i.user_id
+        } for i in items]
+    }

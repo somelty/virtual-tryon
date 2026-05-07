@@ -1,1030 +1,115 @@
-<!doctype html>
-<html lang="zh">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FitAI · 智能试衣</title>
+{% extends "base.html" %}
+{% block title %}试穿{% endblock %}
+{% block content %}
+<div class="hero" style="text-align:center; padding:40px 24px 20px;">
+  <h1 style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:600;">智能虚拟试穿</h1>
+  <p style="color:var(--text-secondary);max-width:460px;margin:8px auto 0;">上传你的照片和衣物，AI 自动识别分类并模拟试穿效果</p>
+</div>
 
-  <!-- Google Fonts: Playfair Display + DM Sans -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<div class="container">
+  <div class="grid grid-2">
 
-  <style>
-    /* ─────────────────────────────────────────────
-       DESIGN TOKENS
-    ───────────────────────────────────────────── */
-    :root {
-      --bg:          #F7F4F0;       /* warm parchment */
-      --surface:     #FFFFFF;
-      --surface-2:   #F0EDE8;
-      --border:      #E5E0D9;
-      --text-primary: #1C1A17;
-      --text-secondary: #7A7267;
-      --accent:      #C8733A;       /* terracotta */
-      --accent-light: #F2E6DB;
-      --accent-hover: #A85E2C;
-      --success:     #4A8C6F;
-      --shadow-sm:   0 2px 8px rgba(28,26,23,.06);
-      --shadow-md:   0 8px 32px rgba(28,26,23,.10);
-      --shadow-lg:   0 20px 60px rgba(28,26,23,.13);
-      --radius:      20px;
-      --radius-sm:   12px;
-      --transition:  0.35s cubic-bezier(.4,0,.2,1);
-    }
-
-    /* ─────────────────────────────────────────────
-       RESET + BASE
-    ───────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: 'DM Sans', sans-serif;
-      font-weight: 400;
-      background: var(--bg);
-      color: var(--text-primary);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* ─────────────────────────────────────────────
-       NOISE TEXTURE OVERLAY
-    ───────────────────────────────────────────── */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-      opacity: .4;
-    }
-
-    /* ─────────────────────────────────────────────
-       ANIMATIONS
-    ───────────────────────────────────────────── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-    @keyframes shimmer {
-      0%   { background-position: -400px 0; }
-      100% { background-position: 400px 0; }
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    @keyframes pulse-ring {
-      0%   { transform: scale(.95); box-shadow: 0 0 0 0 rgba(200,115,58,.35); }
-      70%  { transform: scale(1);   box-shadow: 0 0 0 10px rgba(200,115,58,0); }
-      100% { transform: scale(.95); box-shadow: 0 0 0 0 rgba(200,115,58,0); }
-    }
-    @keyframes resultReveal {
-      from { opacity: 0; transform: scale(.97) translateY(12px); }
-      to   { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    .anim-fade-up   { animation: fadeUp  .7s ease both; }
-    .anim-delay-1   { animation-delay: .1s; }
-    .anim-delay-2   { animation-delay: .2s; }
-    .anim-delay-3   { animation-delay: .35s; }
-    .anim-delay-4   { animation-delay: .5s; }
-
-    /* ─────────────────────────────────────────────
-       FLASH MESSAGES
-    ───────────────────────────────────────────── */
-    .flash {
-      position: relative;
-      z-index: 99;
-      max-width: 640px;
-      margin: 16px auto 0;
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-size: .9rem;
-      text-align: center;
-    }
-    .flash.success { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
-    .flash.error   { background: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; }
-    .flash.info    { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; }
-
-    /* ─────────────────────────────────────────────
-       NAVIGATION
-    ───────────────────────────────────────────── */
-    .nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 18px 48px;
-      background: rgba(247,244,240,.88);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-    }
-    .nav-logo {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      letter-spacing: -.01em;
-    }
-    .nav-logo span { color: var(--accent); }
-    .nav-badge {
-      font-size: .7rem;
-      font-weight: 500;
-      letter-spacing: .05em;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      padding: 4px 10px;
-      border-radius: 99px;
-    }
-
-    /* ─────────────────────────────────────────────
-       HERO SECTION
-    ───────────────────────────────────────────── */
-    .hero {
-      position: relative;
-      text-align: center;
-      padding: 80px 24px 60px;
-      z-index: 1;
-    }
-    .hero-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: .75rem;
-      font-weight: 500;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--accent);
-      background: var(--accent-light);
-      border: 1px solid rgba(200,115,58,.2);
-      padding: 6px 14px;
-      border-radius: 99px;
-      margin-bottom: 28px;
-    }
-    .hero-eyebrow::before {
-      content: '';
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: pulse-ring 2s infinite;
-    }
-    .hero-title {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(2.6rem, 6vw, 4.2rem);
-      font-weight: 600;
-      line-height: 1.12;
-      letter-spacing: -.02em;
-      color: var(--text-primary);
-      max-width: 700px;
-      margin: 0 auto 20px;
-    }
-    .hero-title em {
-      font-style: italic;
-      color: var(--accent);
-    }
-    .hero-subtitle {
-      font-size: 1.05rem;
-      font-weight: 300;
-      color: var(--text-secondary);
-      max-width: 480px;
-      margin: 0 auto 40px;
-      line-height: 1.7;
-    }
-
-    /* ─────────────────────────────────────────────
-       PRIMARY BUTTON
-    ───────────────────────────────────────────── */
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--text-primary);
-      color: var(--bg);
-      font-family: 'DM Sans', sans-serif;
-      font-size: .9rem;
-      font-weight: 500;
-      letter-spacing: .01em;
-      padding: 14px 28px;
-      border-radius: 99px;
-      border: none;
-      cursor: pointer;
-      transition: var(--transition);
-      box-shadow: 0 4px 20px rgba(28,26,23,.2);
-    }
-    .btn-primary:hover {
-      background: var(--accent);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(200,115,58,.35);
-    }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary svg { transition: transform .3s ease; }
-    .btn-primary:hover svg { transform: translateX(3px); }
-
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: transparent;
-      color: var(--text-primary);
-      font-family: 'DM Sans', sans-serif;
-      font-size: .9rem;
-      font-weight: 500;
-      padding: 13px 24px;
-      border-radius: 99px;
-      border: 1.5px solid var(--border);
-      cursor: pointer;
-      transition: var(--transition);
-    }
-    .btn-secondary:hover {
-      border-color: var(--text-primary);
-      background: var(--surface);
-    }
-
-    /* ─────────────────────────────────────────────
-       MAIN INTERACTION SECTION
-    ───────────────────────────────────────────── */
-    .workspace {
-      position: relative;
-      z-index: 1;
-      max-width: 1060px;
-      margin: 0 auto;
-      padding: 0 24px 80px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      align-items: start;
-    }
-
-    /* ─── Cards ─── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 32px;
-      box-shadow: var(--shadow-sm);
-      transition: box-shadow var(--transition);
-    }
-    .card:hover { box-shadow: var(--shadow-md); }
-
-    .card-label {
-      font-size: .68rem;
-      font-weight: 500;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .card-label::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* ─── Upload Zone ─── */
-    .upload-zone {
-      position: relative;
-      border: 2px dashed var(--border);
-      border-radius: var(--radius-sm);
-      padding: 48px 24px;
-      text-align: center;
-      cursor: pointer;
-      transition: var(--transition);
-      background: var(--bg);
-      overflow: hidden;
-    }
-    .upload-zone:hover,
-    .upload-zone.drag-over {
-      border-color: var(--accent);
-      background: var(--accent-light);
-    }
-    .upload-zone input[type="file"] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-      width: 100%;
-      height: 100%;
-    }
-    .upload-icon {
-      width: 52px; height: 52px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 16px;
-      transition: var(--transition);
-      box-shadow: var(--shadow-sm);
-    }
-    .upload-zone:hover .upload-icon {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
-    .upload-zone:hover .upload-icon svg path { stroke: white; }
-    .upload-title {
-      font-size: .95rem;
-      font-weight: 500;
-      color: var(--text-primary);
-      margin-bottom: 6px;
-    }
-    .upload-hint {
-      font-size: .8rem;
-      color: var(--text-secondary);
-      font-weight: 300;
-    }
-    .upload-formats {
-      display: flex;
-      gap: 6px;
-      justify-content: center;
-      margin-top: 16px;
-      flex-wrap: wrap;
-    }
-    .format-tag {
-      font-size: .68rem;
-      font-weight: 500;
-      letter-spacing: .04em;
-      color: var(--text-secondary);
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      padding: 3px 8px;
-      border-radius: 6px;
-    }
-
-    /* ─── Preview Panel ─── */
-    .preview-panel {
-      display: none;
-      position: relative;
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      aspect-ratio: 1;
-    }
-    .preview-panel.visible { display: block; }
-    .preview-panel img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      animation: fadeIn .4s ease;
-    }
-    .preview-remove {
-      position: absolute;
-      top: 10px; right: 10px;
-      width: 28px; height: 28px;
-      background: rgba(28,26,23,.6);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      transition: background var(--transition);
-    }
-    .preview-remove:hover { background: rgba(200,115,58,.9); }
-
-    /* ─── Try-on Button ─── */
-    .tryon-btn-wrap {
-      margin-top: 20px;
-      display: flex;
-      gap: 12px;
-    }
-    .btn-tryon {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      background: var(--accent);
-      color: white;
-      font-family: 'DM Sans', sans-serif;
-      font-size: .9rem;
-      font-weight: 500;
-      padding: 14px;
-      border-radius: 99px;
-      border: none;
-      cursor: pointer;
-      transition: var(--transition);
-      box-shadow: 0 4px 20px rgba(200,115,58,.3);
-    }
-    .btn-tryon:hover {
-      background: var(--accent-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 28px rgba(200,115,58,.4);
-    }
-
-    /* ─── Result Card ─── */
-    .result-image-wrap {
-      position: relative;
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      min-height: 260px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .result-placeholder {
-      text-align: center;
-      color: var(--text-secondary);
-    }
-    .result-placeholder-icon {
-      width: 56px; height: 56px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 12px;
-    }
-    .result-placeholder-text {
-      font-size: .85rem;
-      font-weight: 300;
-    }
-    .result-image-wrap img {
-      width: 100%;
-      object-fit: contain;
-      animation: resultReveal .6s cubic-bezier(.4,0,.2,1) both;
-    }
-
-    /* ─── Skeleton Loader ─── */
-    .skeleton {
-      background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 37%, var(--surface-2) 63%);
-      background-size: 400px 100%;
-      animation: shimmer 1.4s ease infinite;
-      border-radius: var(--radius-sm);
-    }
-    .skeleton-result {
-      height: 260px;
-      border-radius: var(--radius-sm);
-      display: none;
-    }
-    .skeleton-result.visible { display: block; }
-
-    /* ─── Loading Spinner ─── */
-    .spinner {
-      width: 20px; height: 20px;
-      border: 2px solid rgba(255,255,255,.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      display: none;
-    }
-
-    /* ─────────────────────────────────────────────
-       MANNEQUIN DISPLAY
-    ───────────────────────────────────────────── */
-    .mannequin-section {
-      margin-top: 8px;
-    }
-    .mannequin-label {
-      font-size: .7rem;
-      font-weight: 500;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      text-align: center;
-      margin-bottom: 12px;
-    }
-    .mannequin-wrap {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 220px;
-    }
-    .mannequin-wrap img {
-      max-height: 200px;
-      object-fit: contain;
-      filter: drop-shadow(0 4px 12px rgba(28,26,23,.08));
-    }
-
-    /* ─────────────────────────────────────────────
-       RESULT SECTION
-    ───────────────────────────────────────────── */
-    .result-section {
-      position: relative;
-      z-index: 1;
-      max-width: 1060px;
-      margin: 0 auto;
-      padding: 0 24px 100px;
-    }
-    .result-section.hidden { display: none; }
-
-    .result-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 36px;
-      box-shadow: var(--shadow-sm);
-      animation: resultReveal .7s cubic-bezier(.4,0,.2,1) both;
-    }
-    .result-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 28px;
-    }
-    .result-card-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.3rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    .result-status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: .75rem;
-      font-weight: 500;
-      color: var(--success);
-      background: rgba(74,140,111,.08);
-      border: 1px solid rgba(74,140,111,.2);
-      padding: 5px 12px;
-      border-radius: 99px;
-    }
-    .result-status::before {
-      content: '';
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--success);
-    }
-
-    .result-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 16px;
-    }
-    .result-item {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 20px;
-      transition: var(--transition);
-    }
-    .result-item:hover {
-      border-color: var(--accent);
-      background: var(--accent-light);
-    }
-    .result-item-label {
-      font-size: .7rem;
-      font-weight: 500;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-    }
-    .result-item-value {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    .result-item-sub {
-      font-size: .8rem;
-      color: var(--text-secondary);
-      margin-top: 4px;
-      font-weight: 300;
-    }
-
-    /* ─── Confidence Bar ─── */
-    .confidence-wrap {
-      margin-top: 24px;
-    }
-    .confidence-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: .8rem;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-    }
-    .confidence-bar {
-      height: 6px;
-      background: var(--surface-2);
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .confidence-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent-light), var(--accent));
-      border-radius: 99px;
-      transition: width 1s cubic-bezier(.4,0,.2,1);
-    }
-
-    /* ─────────────────────────────────────────────
-       DIVIDER
-    ───────────────────────────────────────────── */
-    .section-divider {
-      max-width: 1060px;
-      margin: 0 auto 40px;
-      padding: 0 24px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      color: var(--text-secondary);
-      font-size: .72rem;
-      font-weight: 500;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-    .section-divider::before,
-    .section-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* ─────────────────────────────────────────────
-       MODEL STYLE TOGGLE
-    ───────────────────────────────────────────── */
-    .style-toggle {
-      display: flex;
-      gap: 8px;
-      margin-top: 20px;
-    }
-    .style-option {
-      flex: 1;
-      padding: 10px;
-      border-radius: var(--radius-sm);
-      border: 1.5px solid var(--border);
-      background: var(--bg);
-      cursor: pointer;
-      text-align: center;
-      font-size: .78rem;
-      font-weight: 500;
-      color: var(--text-secondary);
-      transition: var(--transition);
-    }
-    .style-option.active {
-      border-color: var(--accent);
-      background: var(--accent-light);
-      color: var(--accent);
-    }
-    .style-option:hover { border-color: var(--accent); }
-
-    /* ─────────────────────────────────────────────
-       FOOTER
-    ───────────────────────────────────────────── */
-    footer {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-      padding: 32px 24px;
-      border-top: 1px solid var(--border);
-      font-size: .78rem;
-      color: var(--text-secondary);
-      font-weight: 300;
-    }
-    footer span { color: var(--accent); }
-
-    /* ─────────────────────────────────────────────
-       RESPONSIVE
-    ───────────────────────────────────────────── */
-    @media (max-width: 720px) {
-      .nav { padding: 16px 20px; }
-      .hero { padding: 60px 20px 40px; }
-      .workspace { grid-template-columns: 1fr; padding: 0 16px 60px; }
-      .result-section { padding: 0 16px 80px; }
-      .result-grid { grid-template-columns: 1fr 1fr; }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- ═══════════════════════════════════
-       NAVIGATION
-  ════════════════════════════════════ -->
-  <nav class="nav">
-    <div class="nav-logo">Fit<span>AI</span></div>
-    <div class="nav-badge">Beta · 智能版本</div>
-  </nav>
-
-  <!-- Flash messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="flash {{ category }}">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
-  <!-- ═══════════════════════════════════
-       HERO SECTION
-  ════════════════════════════════════ -->
-  <section class="hero">
-    <div class="hero-eyebrow anim-fade-up">AI 驱动 · 智能识别</div>
-    <h1 class="hero-title anim-fade-up anim-delay-1">
-      试穿每一件<em>理想</em>的衣物
-    </h1>
-    <p class="hero-subtitle anim-fade-up anim-delay-2">
-      上传服装图片，AI 自动分类识别，并即时呈现虚拟试穿效果。
-      告别盲目购物，感受真实穿搭。
-    </p>
-    <div class="anim-fade-up anim-delay-3" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <button class="btn-primary" onclick="document.getElementById('upload-input').click()">
-        上传服装图片
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <button class="btn-secondary" onclick="scrollToWorkspace()">了解更多</button>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════
-       WORKSPACE
-  ════════════════════════════════════ -->
-  <section class="workspace" id="workspace">
-
-    <!-- LEFT: Upload Card -->
-    <div class="card anim-fade-up anim-delay-2">
-      <div class="card-label">上传服装</div>
-
-      <!-- Upload zone (with Flask form) -->
-      <form method="post" enctype="multipart/form-data" id="tryon-form">
-        <div class="upload-zone" id="upload-zone">
-          <input type="file" name="file" id="upload-input" accept="image/*" required>
-          <div class="upload-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="#7A7267" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+    <!-- Left: Photo + Clothing Selection -->
+    <div>
+      <!-- User Photos -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">我的试穿照片</div>
+        {% if photos %}
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+            {% for photo in photos %}
+              <div style="position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:2px solid {% if photo.is_active %}var(--accent){% else %}var(--border){% endif %};">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.id|string + '/' + photo.filename) }}" style="width:100%;height:100%;object-fit:cover;">
+                {% if not photo.is_active %}
+                <form method="post" action="{{ url_for('main.set_active_photo', photo_id=photo.id) }}" style="position:absolute;inset:0;">
+                  <button type="submit" style="width:100%;height:100%;background:transparent;border:none;cursor:pointer;" title="设为当前"></button>
+                </form>
+                {% endif %}
+              </div>
+            {% endfor %}
           </div>
-          <p class="upload-title">拖拽或点击上传</p>
-          <p class="upload-hint">支持所有常见图片格式</p>
-          <div class="upload-formats">
-            <span class="format-tag">JPG</span>
-            <span class="format-tag">PNG</span>
-            <span class="format-tag">WEBP</span>
+        {% else %}
+          <div class="empty-state" style="padding:24px;">
+            <p style="font-size:.85rem;">还没有上传照片</p>
           </div>
-        </div>
-
-        <!-- Preview (shown after file selected) -->
-        <div class="preview-panel" id="preview-panel">
-          <img id="preview-img" src="" alt="预览">
-          <button type="button" class="preview-remove" id="remove-btn">✕</button>
-        </div>
-
-        <!-- Model Style Toggle (UI only) -->
-        <div style="margin-top:20px;">
-          <p style="font-size:.75rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">模特风格</p>
-          <div class="style-toggle">
-            <div class="style-option active" onclick="selectStyle(this)">标准</div>
-            <div class="style-option" onclick="selectStyle(this)">运动</div>
-            <div class="style-option" onclick="selectStyle(this)">正装</div>
+        {% endif %}
+        <form method="post" action="{{ url_for('main.upload_photo') }}" enctype="multipart/form-data">
+          <div style="display:flex;gap:8px;">
+            <input type="file" name="photo" accept="image/*" required style="flex:1;font-size:.82rem;">
+            <button type="submit" class="btn btn-accent btn-sm">上传照片</button>
           </div>
-        </div>
-
-        <!-- Submit -->
-        <div class="tryon-btn-wrap">
-          <button type="submit" class="btn-tryon" id="tryon-btn">
-            <span id="btn-text">立即试衣</span>
-            <div class="spinner" id="btn-spinner"></div>
-            <svg id="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M5 3l14 9-14 9V3z" fill="currentColor"/>
-            </svg>
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- RIGHT: Try-on Result Card -->
-    <div class="card anim-fade-up anim-delay-3">
-      <div class="card-label">试穿效果</div>
-
-      <!-- Mannequin (always shown) -->
-      <div class="mannequin-section">
-        <p class="mannequin-label">原始模特</p>
-        <div class="mannequin-wrap">
-          <img src="{{ url_for('static', filename='mannequin.png') }}" alt="模特">
-        </div>
+        </form>
+        {% if active_photo %}<p style="font-size:.75rem;color:var(--accent);margin-top:6px;">✓ 当前试穿底图已就绪</p>{% endif %}
       </div>
 
-      <!-- Result (shown after submit) -->
-      {% if result_filename %}
-      <div style="margin-top:20px;">
-        <p class="mannequin-label">试穿结果</p>
-        <div class="result-image-wrap">
-          <img src="{{ url_for('static', filename='results/' + result_filename) }}" alt="试穿效果">
+      <!-- Clothing Selection -->
+      <div class="card">
+        <div class="card-title">选择衣物</div>
+        <div id="clothing-selector" style="display:flex;gap:10px;flex-wrap:wrap;max-height:200px;overflow-y:auto;margin-bottom:16px;">
+          <p style="font-size:.82rem;color:var(--text-secondary);">加载中...</p>
         </div>
+        <form method="post" id="tryon-form" style="display:none;">
+          <button type="submit" class="btn btn-accent" style="width:100%;">立即试衣</button>
+        </form>
+        <p style="text-align:center;font-size:.8rem;color:var(--text-secondary);margin-top:8px;">
+          在<a href="{{ url_for('wardrobe.index') }}" style="color:var(--accent);">衣橱</a>中上传更多衣物
+        </p>
       </div>
-      {% else %}
-      <!-- Placeholder shown when no result yet -->
-      <div style="margin-top:20px;" id="result-placeholder-block">
-        <p class="mannequin-label">试穿结果</p>
-        <div class="result-image-wrap" id="result-image-wrap">
-          <div class="result-placeholder">
-            <div class="result-placeholder-icon">
+    </div>
+
+    <!-- Right: Try-on Result -->
+    <div>
+      <div class="card">
+        <div class="card-title">试穿效果</div>
+        {% if result_filename %}
+          <div style="border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);">
+            <img src="{{ url_for('static', filename='results/' + result_filename) }}" style="width:100%;" alt="试穿效果">
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <div class="empty-state-icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="#C8A08C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="var(--text-secondary)" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
             </div>
-            <p class="result-placeholder-text">上传服装后<br>试穿效果将显示在这里</p>
+            <p>选择衣物后点击试衣<br>效果将显示在这里</p>
           </div>
-        </div>
-        <!-- Skeleton loader (hidden until loading) -->
-        <div class="skeleton skeleton-result" id="skeleton-result"></div>
-      </div>
-      {% endif %}
-    </div>
-
-  </section>
-
-  <!-- ═══════════════════════════════════
-       RESULT SECTION
-  ════════════════════════════════════ -->
-  {% if result_filename %}
-  <div class="section-divider">分析结果</div>
-  <section class="result-section">
-    <div class="result-card">
-      <div class="result-card-header">
-        <h2 class="result-card-title">智能识别完成</h2>
-        <div class="result-status">分析成功</div>
-      </div>
-
-      <div class="result-grid">
-        <div class="result-item">
-          <p class="result-item-label">识别类别</p>
-          <p class="result-item-value">{{ predicted_label }}</p>
-          <p class="result-item-sub">FashionMNIST 标签</p>
-        </div>
-        <div class="result-item">
-          <p class="result-item-label">置信度</p>
-          <p class="result-item-value" id="conf-value">—</p>
-          <p class="result-item-sub">模型输出概率</p>
-        </div>
-        <div class="result-item">
-          <p class="result-item-label">处理状态</p>
-          <p class="result-item-value" style="color:var(--success);font-size:1.1rem;">✓ 完成</p>
-          <p class="result-item-sub">试衣图已合成</p>
-        </div>
-      </div>
-
-      <!-- Confidence bar (animated, mock value) -->
-      <div class="confidence-wrap" id="conf-wrap">
-        <div class="confidence-label">
-          <span>模型置信度</span>
-          <span id="conf-pct">计算中...</span>
-        </div>
-        <div class="confidence-bar">
-          <div class="confidence-fill" id="conf-fill" style="width:0%"></div>
-        </div>
+        {% endif %}
       </div>
     </div>
-  </section>
-  {% endif %}
 
-  <!-- ═══════════════════════════════════
-       FOOTER
-  ════════════════════════════════════ -->
-  <footer>
-    FitAI · 虚拟试衣系统 &nbsp;|&nbsp; Powered by <span>PyTorch × Flask</span> &nbsp;|&nbsp; 武汉大学
-  </footer>
+  </div>
+</div>
+{% endblock %}
 
-  <!-- ═══════════════════════════════════
-       JAVASCRIPT
-  ════════════════════════════════════ -->
-  <script>
-    /* ── Scroll helper ── */
-    function scrollToWorkspace() {
-      document.getElementById('workspace').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    /* ── Model style selector ── */
-    function selectStyle(el) {
-      document.querySelectorAll('.style-option').forEach(o => o.classList.remove('active'));
-      el.classList.add('active');
-    }
-
-    /* ── File input → preview ── */
-    const input       = document.getElementById('upload-input');
-    const uploadZone  = document.getElementById('upload-zone');
-    const previewPanel = document.getElementById('preview-panel');
-    const previewImg  = document.getElementById('preview-img');
-    const removeBtn   = document.getElementById('remove-btn');
-
-    function showPreview(file) {
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        previewImg.src = e.target.result;
-        uploadZone.style.display = 'none';
-        previewPanel.classList.add('visible');
-      };
-      reader.readAsDataURL(file);
-    }
-
-    input.addEventListener('change', () => {
-      if (input.files[0]) showPreview(input.files[0]);
-    });
-
-    removeBtn.addEventListener('click', () => {
-      input.value = '';
-      previewImg.src = '';
-      previewPanel.classList.remove('visible');
-      uploadZone.style.display = 'block';
-    });
-
-    /* ── Drag & Drop ── */
-    uploadZone.addEventListener('dragover', e => {
-      e.preventDefault();
-      uploadZone.classList.add('drag-over');
-    });
-    uploadZone.addEventListener('dragleave', () => {
-      uploadZone.classList.remove('drag-over');
-    });
-    uploadZone.addEventListener('drop', e => {
-      e.preventDefault();
-      uploadZone.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('image/')) {
-        // Manually assign to input
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        input.files = dt.files;
-        showPreview(file);
+{% block head %}
+<script>
+// Load wardrobe items via AJAX
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('/wardrobe/api/wardrobe-items')
+    .then(r => r.json())
+    .then(data => {
+      const items = data.items;
+      const container = document.getElementById('clothing-selector');
+      const form = document.getElementById('tryon-form');
+      if (items.length === 0) {
+        container.innerHTML = '<p style="font-size:.82rem;color:var(--text-secondary);">衣橱为空，请先上传衣物</p>';
+        return;
       }
-    });
-
-    /* ── Form submit → loading state ── */
-    const form       = document.getElementById('tryon-form');
-    const tryonBtn   = document.getElementById('tryon-btn');
-    const btnText    = document.getElementById('btn-text');
-    const btnSpinner = document.getElementById('btn-spinner');
-    const btnIcon    = document.getElementById('btn-icon');
-    const skeleton   = document.getElementById('skeleton-result');
-    const resultWrap = document.getElementById('result-image-wrap');
-    const placeholderBlock = document.getElementById('result-placeholder-block');
-
-    if (form) {
-      form.addEventListener('submit', () => {
-        // Button loading state
-        btnText.textContent = '分析中...';
-        btnSpinner.style.display = 'block';
-        btnIcon.style.display = 'none';
-        tryonBtn.style.pointerEvents = 'none';
-
-        // Show skeleton, hide placeholder
-        if (resultWrap)    resultWrap.style.display = 'none';
-        if (skeleton)      skeleton.classList.add('visible');
+      container.innerHTML = '';
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.style.cssText = 'width:72px;height:72px;border-radius:10px;overflow:hidden;border:2px solid var(--border);cursor:pointer;position:relative;';
+        div.innerHTML = `<img src="/static/uploads/${item.user_id}/${item.filename}" style="width:100%;height:100%;object-fit:cover;">
+          <span style="position:absolute;bottom:2px;left:2px;right:2px;font-size:.55rem;background:rgba(0,0,0,.6);color:white;padding:1px 4px;border-radius:4px;text-align:center;">${item.display_category}</span>`;
+        div.addEventListener('click', () => {
+          document.querySelectorAll('#clothing-selector > div').forEach(d => d.style.borderColor = 'var(--border)');
+          div.style.borderColor = 'var(--accent)';
+          form.style.display = 'block';
+          form.action = '/tryon/' + item.id;
+        });
+        container.appendChild(div);
       });
-    }
-
-    /* ── Confidence bar animation (runs if result is shown) ── */
-    const confFill = document.getElementById('conf-fill');
-    const confPct  = document.getElementById('conf-pct');
-    const confValue = document.getElementById('conf-value');
-
-    if (confFill) {
-      // Mock a confidence score between 82–97%
-      const score = Math.floor(Math.random() * 16) + 82;
-      setTimeout(() => {
-        confFill.style.width = score + '%';
-        confPct.textContent  = score + '%';
-        if (confValue) confValue.textContent = score + '%';
-      }, 400);
-    }
-
-    /* ── Intersection observer: animate cards on scroll ── */
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.style.opacity = '1';
-          entry.target.style.transform = 'translateY(0)';
-        }
-      });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.anim-fade-up').forEach(el => {
-      // Don't re-trigger if already visible
-      if (el.getBoundingClientRect().top < window.innerHeight) return;
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(24px)';
-      el.style.transition = 'opacity .7s ease, transform .7s ease';
-      observer.observe(el);
     });
-  </script>
-</body>
-</html>
+});
+</script>
+{% endblock %}
