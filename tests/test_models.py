@@ -71,13 +71,32 @@ class TestPhotoModel:
             db.session.commit()
 
             p1 = Photo(user_id=user.id, filename='a.jpg', is_active=True)
-            p2 = Photo(user_id=user.id, filename='b.jpg', is_active=True)
-            db.session.add(p1)
-            db.session.add(p2)
+            p2 = Photo(user_id=user.id, filename='b.jpg', is_active=False)
+            db.session.add_all([p1, p2])
             db.session.commit()
 
-            active = Photo.query.filter_by(user_id=user.id, is_active=True).all()
-            assert len(active) == 1  # 最后设置的那个
+            # Activate p2 using set_active — should deactivate p1
+            result = Photo.set_active(user.id, p2.id)
+            assert result is True
+
+            p1_after = Photo.query.get(p1.id)
+            p2_after = Photo.query.get(p2.id)
+            assert p1_after.is_active is False
+            assert p2_after.is_active is True
+
+    def test_set_active_returns_false_for_wrong_user(self, app):
+        with app.app_context():
+            user = User(username='sa', email='sa@test.com')
+            user.set_password('pw')
+            db.session.add(user)
+            db.session.commit()
+
+            photo = Photo(user_id=user.id, filename='x.jpg', is_active=True)
+            db.session.add(photo)
+            db.session.commit()
+
+            result = Photo.set_active(99999, photo.id)  # wrong user
+            assert result is False
 
 
 class TestClothingModel:

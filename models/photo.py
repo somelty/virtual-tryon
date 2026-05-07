@@ -23,15 +23,3 @@ class Photo(db.Model):
         return False
 
 
-@db.event.listens_for(db.session, 'before_flush')
-def _ensure_single_active_photo(session, flush_context, instances):
-    """flush 前确保同一用户只有一个 active photo"""
-    by_user = {}
-    for obj in list(session.new):
-        if isinstance(obj, Photo) and obj.is_active and obj.user_id:
-            by_user.setdefault(obj.user_id, []).append(obj)
-
-    for user_id, photos in by_user.items():
-        if len(photos) > 1:
-            for photo in photos[:-1]:
-                photo.is_active = False
