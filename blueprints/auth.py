@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db
 from models.user import User
+from utils.email import send_verification_email, send_reset_email
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -75,3 +78,58 @@ def logout():
     logout_user()
     flash('已退出登录', 'info')
     return redirect(url_for('auth.login'))
+
+
+@auth_bp.route('/verify/<token>')
+def verify_email(token):
+    user = User.query.filter_by(verification_token=token).first()
+    if user:
+        user.email_verified = True
+        user.verification_token = None
+        db.session.commit()
+        flash('邮箱验证成功，请登录', 'success')
+    else:
+        flash('验证链接无效或已过期', 'error')
+    return redirect(url_for('auth.login'))
+
+
+@auth_bp.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+
+    token = request.args.get('token') or request.form.get('token')
+
+    if request.method == 'POST':
+        if token:
+            # Step 2: set new password
+            user = User.query.filter_by(reset_token=token).first()
+            if user and user.reset_token_expiry and user.reset_token_expiry > datetime.utcnow():
+                password = request.form.get('password', '')
+                confirm = request.form.get('confirm_password', '')
+                if len(password) < 6:
+                    flash('密码至少6个字符', 'error')
+                elif password != confirm:
+                    flash('两次密码不一致', 'error')
+                else:
+                    user.set_password(password)
+                    user.reset_token = None
+                    user.reset_token_expiry = None
+                    db.session.commit()
+                    flash('密码已重置，请登录', 'success')
+                    return redirect(url_for('auth.login'))
+            else:
+                flash('重置链接已过期', 'error')
+                return redirect(url_for('auth.reset_password'))
+        else:
+            # Step 1: send reset email
+            email = request.form.get('email', '').strip()
+            user = User.query.filter_by(email=email).first()
+            if user:
+                t = user.generate_reset_token()
+                db.session.commit()
+                send_reset_email(user, t)
+            flash('如果该邮箱已注册，重置邮件已发送', 'info')
+            return redirect(url_for('auth.login'))
+
+    return render_template('reset_password.html', token=token)
