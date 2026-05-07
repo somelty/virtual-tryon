@@ -10,6 +10,8 @@ class Config:
     RESULT_FOLDER = os.path.join(BASE_DIR, 'static', 'results')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     TRYON_ENGINE = 'mediapipe'  # 'mediapipe' | 'simple'
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
 
 
 class TestConfig(Config):
