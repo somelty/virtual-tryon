@@ -11,6 +11,7 @@
 ## Key Learnings
 
 - **Project:** 实验案例
+- **SQLAlchemy single-active constraint:** To enforce "only one active record per user" (e.g. Photo.is_active), do NOT use mapper-level events (before_insert/after_insert) — they fire per-row and don't handle multiple new objects in the same flush correctly. Instead use `@db.event.listens_for(db.session, 'before_flush')` and iterate `session.new` to deactivate duplicates before the SQL flush. (See bug-001)
 
 ## Do-Not-Repeat
 

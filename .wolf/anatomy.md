@@ -1,13 +1,15 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-07T11:43:00.131Z
-> Files: 516 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-07T12:32:34.860Z
+> Files: 525 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
 - `安装扩展包.txt` (~116 tok)
-- `app.py` — API router (~1128 tok)
+- `app_old.py` — Original app.py backup (~1128 tok)
+- `app.py` — create_app (~134 tok)
 - `CLAUDE.md` — OpenWolf (~682 tok)
+- `config.py` — Declares Config (~193 tok)
 - `docs/superpowers/specs/2026-05-07-virtual-tryon-multi-user-design.md` (~332 tok)
 - `model.py` — FashionCNN: forward (~478 tok)
 - `show.py` (~518 tok)
@@ -34,9 +36,22 @@
 
 - `2026-05-07-virtual-tryon-multi-user-design.md` — 虚拟试衣多用户系统 — 设计文档 (~970 tok)
 
+## models/
+
+- `__init__.py` (~45 tok)
+- `clothing.py` — Clothing: display_category (~161 tok)
+- `photo.py` — Photo: set_active (~374 tok)
+- `user.py` — User: set_password, check_password, get_active_photo, generate_verification_token + 1 more (~475 tok)
+
 ## templates/
 
 - `index.html` — FitAI · 智能试衣 (~8215 tok)
+
+## tests/
+
+- `__init__.py` (~0 tok)
+- `conftest.py` — app, client, runner, logged_in_user (~247 tok)
+- `test_models.py` — TestUserModel: test_create_user, test_username_unique, test_email_unique, test_create_photo + 3 more (~1109 tok)
 
 ## venv/
 
