@@ -14,8 +14,8 @@ class TestRegister:
             'email': 'new@example.com',
             'password': 'Password1',
             'confirm_password': 'Password1'
-        }, follow_redirects=True)
-        assert response.status_code == 200
+        })
+        assert response.status_code == 302  # redirect to login
         with app.app_context():
             user = User.query.filter_by(username='newuser').first()
             assert user is not None

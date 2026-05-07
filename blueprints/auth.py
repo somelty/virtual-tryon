@@ -6,6 +6,12 @@ from models.user import User
 auth_bp = Blueprint('auth', __name__)
 
 
+@auth_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    """TODO: implement login in Task 4. Stub so auth.login is resolvable."""
+    return '<h1>Login Page</h1>', 200
+
+
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -45,6 +51,6 @@ def register():
 
         print(f'\n[DEV] 邮箱验证链接: http://localhost:5000/verify/{user.verification_token}\n')
         flash('注册成功！验证邮件已发送（开发模式请查看控制台）', 'success')
-        return redirect(url_for('auth.register'))
+        return redirect(url_for('auth.login'))
 
     return render_template('register.html')
