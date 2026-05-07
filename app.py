@@ -34,6 +34,8 @@ def create_app(config_class=Config):
     app.register_blueprint(main_bp)
     from blueprints.wardrobe import wardrobe_bp
     app.register_blueprint(wardrobe_bp)
+    from blueprints.tryon import tryon_bp
+    app.register_blueprint(tryon_bp)
 
     with app.app_context():
         db.create_all()
