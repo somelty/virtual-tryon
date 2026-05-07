@@ -1,14 +1,14 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-07T13:08:40.093Z
-> Files: 537 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-07T13:25:11.899Z
+> Files: 547 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
 - `.gitignore` — Git ignore rules (~6 tok)
 - `安装扩展包.txt` (~116 tok)
 - `app_old.py` — Original app.py backup (~1128 tok)
-- `app.py` — load_user, create_app (~290 tok)
+- `app.py` — load_user, create_app (~338 tok)
 - `CLAUDE.md` — OpenWolf (~682 tok)
 - `config.py` — Declares Config (~193 tok)
 - `docs/superpowers/specs/2026-05-07-virtual-tryon-multi-user-design.md` (~332 tok)
@@ -29,6 +29,8 @@
 - `__init__.py` (~0 tok)
 - `auth.py` — register, login, logout, verify_email (~1346 tok)
 - `main.py` — index, upload_photo, set_active_photo, delete_photo (~660 tok)
+- `tryon.py` — try_on (~456 tok)
+- `wardrobe.py` — index, upload, edit, delete (~969 tok)
 
 ## data/FashionMNIST/raw/
 
@@ -43,6 +45,13 @@
 
 - `2026-05-07-virtual-tryon-multi-user-design.md` — 虚拟试衣多用户系统 — 设计文档 (~970 tok)
 
+## engines/
+
+- `__init__.py` — get_engine (~95 tok)
+- `base.py` — TryOnEngine: composite (~79 tok)
+- `mediapipe.py` — MediaPipeEngine: pose, midpoint, composite (~1508 tok)
+- `simple.py` — SimpleEngine: composite (~392 tok)
+
 ## models/
 
 - `__init__.py` (~45 tok)
@@ -52,10 +61,12 @@
 
 ## templates/
 
-- `index.html` — FitAI · 智能试衣 (~8215 tok)
-- `login.html` — 登录 - FitAI (~172 tok)
-- `register.html` — 注册 - FitAI (~210 tok)
-- `reset_password.html` — 重置密码 - FitAI (~247 tok)
+- `base.html` — {% block title %}FitAI{% endblock %} · 智能试衣 (~3316 tok)
+- `index.html` — FitAI · 智能试衣 (~8451 tok)
+- `login.html` — 登录 · 智能试衣 (~202 tok)
+- `register.html` — 注册 · 智能试衣 (~271 tok)
+- `reset_password.html` — 重置密码 · 智能试衣 (~295 tok)
+- `wardrobe.html` — 衣物库 · FitAI (~1462 tok)
 
 ## tests/
 
@@ -64,6 +75,8 @@
 - `test_auth.py` — TestRegister: test_register_page_loads, test_register_success, test_register_duplicate_username, tes (~1588 tok)
 - `test_models.py` — TestUserModel: test_create_user, test_username_unique, test_email_unique, test_create_photo + 5 more (~1630 tok)
 - `test_photo.py` — TestPhotoUpload: test_upload_photo, test_set_active_photo, test_cannot_access_other_user_photo, test (~785 tok)
+- `test_tryon.py` — TestTryOn: test_tryon_endpoint, test_tryon_no_active_photo, test_tryon_other_user_clothing (~681 tok)
+- `test_wardrobe.py` — TestWardrobe: test_wardrobe_page, test_upload_clothing, test_edit_category, test_delete_clothing + 1 (~831 tok)
 
 ## utils/
 

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}FitAI{% endblock %} · 智能试衣</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ─────────────────────────────────────────────
+       DESIGN TOKENS
+    ───────────────────────────────────────────── */
+    :root {
+      --bg:          #F7F4F0;       /* warm parchment */
+      --surface:     #FFFFFF;
+      --surface-2:   #F0EDE8;
+      --border:      #E5E0D9;
+      --text-primary: #1C1A17;
+      --text-secondary: #7A7267;
+      --accent:      #C8733A;       /* terracotta */
+      --accent-light: #F2E6DB;
+      --accent-hover: #A85E2C;
+      --success:     #4A8C6F;
+      --danger:      #C84040;
+      --shadow-sm:   0 2px 8px rgba(28,26,23,.06);
+      --shadow-md:   0 8px 32px rgba(28,26,23,.10);
+      --radius:      20px;
+      --radius-sm:   12px;
+      --transition:  0.35s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ─────────────────────────────────────────────
+       RESET + BASE
+    ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* ─────────────────────────────────────────────
+       NOISE TEXTURE OVERLAY
+    ───────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: .4;
+    }
+
+    /* ─────────────────────────────────────────────
+       ANIMATIONS
+    ───────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ─────────────────────────────────────────────
+       NAVIGATION
+    ───────────────────────────────────────────── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(247,244,240,.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    .nav-links a, .nav-user-btn {
+      font-size: .85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: var(--transition);
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* ─── User dropdown ─── */
+    .nav-user-menu {
+      position: relative;
+      display: inline-block;
+    }
+    .nav-user-menu .dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-md);
+      min-width: 160px;
+      padding: 8px;
+    }
+    .nav-user-menu:hover .dropdown {
+      display: block;
+    }
+    .dropdown a, .dropdown button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: .82rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .dropdown a:hover, .dropdown button:hover {
+      background: var(--surface-2);
+      color: var(--accent);
+    }
+    .dropdown .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 6px 0;
+    }
+
+    /* ─────────────────────────────────────────────
+       FLASH MESSAGES
+    ───────────────────────────────────────────── */
+    .flash-messages {
+      max-width: 600px;
+      margin: 24px auto 0;
+      padding: 0 24px;
+    }
+    .flash {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      font-size: .85rem;
+    }
+    .flash.success {
+      background: rgba(74,140,111,.1);
+      border: 1px solid rgba(74,140,111,.2);
+      color: var(--success);
+    }
+    .flash.error {
+      background: rgba(200,64,64,.08);
+      border: 1px solid rgba(200,64,64,.2);
+      color: var(--danger);
+    }
+    .flash.info {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    /* ─────────────────────────────────────────────
+       AUTH PAGES
+    ───────────────────────────────────────────── */
+    .auth-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      padding: 24px;
+    }
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      box-shadow: var(--shadow-sm);
+      width: 100%;
+      max-width: 420px;
+    }
+    .auth-card h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    /* ─────────────────────────────────────────────
+       FORM ELEMENTS
+    ───────────────────────────────────────────── */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .9rem;
+      background: var(--bg);
+      transition: border-color var(--transition);
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* ─────────────────────────────────────────────
+       BUTTONS
+    ───────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .9rem;
+      font-weight: 500;
+      padding: 12px 24px;
+      border-radius: 99px;
+      border: none;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--text-primary);
+      color: var(--bg);
+      width: 100%;
+    }
+    .btn-primary:hover {
+      background: var(--accent);
+    }
+    .btn-accent {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-accent:hover {
+      background: var(--accent-hover);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text-primary);
+    }
+    .btn-outline:hover {
+      border-color: var(--text-primary);
+    }
+    .btn-sm {
+      font-size: .78rem;
+      padding: 8px 14px;
+    }
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    /* ─────────────────────────────────────────────
+       AUTH LINKS
+    ───────────────────────────────────────────── */
+    .auth-links {
+      text-align: center;
+      margin-top: 20px;
+      font-size: .85rem;
+      color: var(--text-secondary);
+    }
+    .auth-links a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .auth-links a:hover {
+      text-decoration: underline;
+    }
+
+    /* ─────────────────────────────────────────────
+       LAYOUT HELPERS
+    ───────────────────────────────────────────── */
+    .container {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .grid {
+      display: grid;
+      gap: 20px;
+    }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-title {
+      font-size: .7rem;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+    .empty-state-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 16px;
+      background: var(--surface-2);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ─────────────────────────────────────────────
+       RESPONSIVE
+    ───────────────────────────────────────────── */
+    @media (max-width: 720px) {
+      .nav { padding: 16px 20px; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════
+       NAVIGATION
+  ════════════════════════════════════ -->
+  <nav class="nav">
+    <a href="{{ url_for('main.index') }}" class="nav-logo">Fit<span>AI</span></a>
+    <div class="nav-links">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.index') }}" class="{% if request.endpoint == 'main.index' %}active{% endif %}">试穿</a>
+        <a href="{{ url_for('wardrobe.index') }}" class="{% if request.endpoint and request.endpoint.startswith('wardrobe') %}active{% endif %}">衣橱</a>
+        <div class="nav-user-menu">
+          <span class="nav-user-btn">{{ current_user.username }} ▾</span>
+          <div class="dropdown">
+            <a href="{{ url_for('main.index') }}">我的照片</a>
+            <div class="divider"></div>
+            <a href="{{ url_for('auth.logout') }}">退出登录</a>
+          </div>
+        </div>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}">登录</a>
+        <a href="{{ url_for('auth.register') }}">注册</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════
+       FLASH MESSAGES
+  ════════════════════════════════════ -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-messages">
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ═══════════════════════════════════
+       CONTENT
+  ════════════════════════════════════ -->
+  {% block content %}{% endblock %}
+
+  <!-- ═══════════════════════════════════
+       FOOTER
+  ════════════════════════════════════ -->
+  <footer style="text-align:center; padding:32px 24px; border-top:1px solid var(--border); font-size:.78rem; color:var(--text-secondary); margin-top:60px;">
+    FitAI · 虚拟试衣系统 &nbsp;|&nbsp; Powered by <span style="color:var(--accent);">PyTorch × Flask</span> &nbsp;|&nbsp; 武汉大学
+  </footer>
+</body>
+</html>
