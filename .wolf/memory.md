@@ -51,3 +51,17 @@
 | 20:58 | Created blueprints/main.py | — | ~39 |
 | 20:58 | Edited app.py | added 1 import(s) | ~44 |
 | 20:58 | All 7 auth tests pass (4 register + 3 login) | blueprints/auth.py, templates/login.html, tests/test_auth.py, models/user.py, blueprints/main.py, app.py | 7/7 PASS | ~500 |
+| 21:02 | Created utils/__init__.py | — | ~0 |
+| 21:02 | Created utils/email.py | — | ~132 |
+| 21:02 | Edited tests/test_auth.py | added 1 import(s) | ~31 |
+| 21:02 | Edited tests/test_auth.py | modified test_login_wrong_password() | ~888 |
+| 21:03 | Edited blueprints/auth.py | added 2 import(s) | ~88 |
+| 21:04 | Edited blueprints/auth.py | modified logout() | ~627 |
+| 21:04 | Created templates/reset_password.html | — | ~247 |
+| 21:04 | Edited blueprints/auth.py | 4→4 lines | ~34 |
+| 21:05 | All 12 auth tests pass (4 register + 3 login + 2 verify + 3 reset) | utils/__init__.py, utils/email.py, blueprints/auth.py, templates/reset_password.html, tests/test_auth.py | 12/12 PASS | ~500 |
+| 21:07 | Created utils/image.py | — | ~286 |
+| 21:07 | Created tests/test_photo.py | — | ~774 |
+| 21:07 | Created blueprints/main.py | — | ~660 |
+| 21:08 | Edited tests/test_photo.py | modified test_set_active_photo() | ~215 |
+| HH:MM | Task 6: Created utils/image.py, created tests/test_photo.py, rewrote blueprints/main.py with upload/set-active/delete routes, fixed test_set_active_photo DetachedInstanceError | utils/image.py, tests/test_photo.py, blueprints/main.py | 4/4 photo tests PASS, 24/24 total | ~500 |

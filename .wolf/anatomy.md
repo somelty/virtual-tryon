@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-07T12:58:50.609Z
-> Files: 532 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-07T13:08:40.093Z
+> Files: 537 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -27,8 +27,8 @@
 ## blueprints/
 
 - `__init__.py` (~0 tok)
-- `auth.py` — register, login, logout (~724 tok)
-- `main.py` — index (~39 tok)
+- `auth.py` — register, login, logout, verify_email (~1346 tok)
+- `main.py` — index, upload_photo, set_active_photo, delete_photo (~660 tok)
 
 ## data/FashionMNIST/raw/
 
@@ -55,13 +55,21 @@
 - `index.html` — FitAI · 智能试衣 (~8215 tok)
 - `login.html` — 登录 - FitAI (~172 tok)
 - `register.html` — 注册 - FitAI (~210 tok)
+- `reset_password.html` — 重置密码 - FitAI (~247 tok)
 
 ## tests/
 
 - `__init__.py` (~0 tok)
 - `conftest.py` — app, client, runner, logged_in_user (~247 tok)
-- `test_auth.py` — TestRegister: test_register_page_loads, test_register_success, test_register_duplicate_username, tes (~842 tok)
+- `test_auth.py` — TestRegister: test_register_page_loads, test_register_success, test_register_duplicate_username, tes (~1588 tok)
 - `test_models.py` — TestUserModel: test_create_user, test_username_unique, test_email_unique, test_create_photo + 5 more (~1630 tok)
+- `test_photo.py` — TestPhotoUpload: test_upload_photo, test_set_active_photo, test_cannot_access_other_user_photo, test (~785 tok)
+
+## utils/
+
+- `__init__.py` (~0 tok)
+- `email.py` — send_verification_email, send_reset_email (~132 tok)
+- `image.py` — allowed_file, save_upload, validate_image (~286 tok)
 
 ## venv/
 
