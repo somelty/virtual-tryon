@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>衣物库 · FitAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #F7F4F0;
+      color: #1C1A17;
+      padding: 40px 24px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 1.8rem; font-weight: 500; margin-bottom: 8px; }
+    .subtitle { color: #7A7267; font-weight: 300; margin-bottom: 32px; }
+
+    .flash { padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: .9rem; }
+    .flash.success { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
+    .flash.error { background: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; }
+    .flash.info { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; }
+
+    .card {
+      background: #FFF; border: 1px solid #E5E0D9;
+      border-radius: 16px; padding: 24px; margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(28,26,23,.06);
+    }
+
+    .upload-form { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .upload-form input[type="file"] { flex: 1; min-width: 200px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 20px; border-radius: 99px; border: none;
+      font-family: 'DM Sans', sans-serif; font-size: .85rem; font-weight: 500;
+      cursor: pointer; transition: .25s ease;
+    }
+    .btn-primary { background: #1C1A17; color: #F7F4F0; }
+    .btn-primary:hover { background: #C8733A; transform: translateY(-1px); }
+    .btn-sm { padding: 6px 14px; font-size: .8rem; }
+    .btn-outline { background: transparent; border: 1.5px solid #E5E0D9; color: #1C1A17; }
+    .btn-outline:hover { border-color: #C8733A; color: #C8733A; }
+    .btn-danger { background: transparent; border: 1.5px solid #E57373; color: #C62828; }
+    .btn-danger:hover { background: #FFEBEE; }
+
+    .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+    .item-card {
+      background: #F7F4F0; border: 1px solid #E5E0D9;
+      border-radius: 12px; padding: 16px; transition: .25s ease;
+    }
+    .item-card:hover { border-color: #C8733A; }
+    .item-preview {
+      width: 100%; aspect-ratio: 1; object-fit: contain;
+      background: #FFF; border-radius: 8px; margin-bottom: 12px;
+    }
+    .item-category { font-size: .9rem; font-weight: 500; margin-bottom: 4px; }
+    .item-date { font-size: .75rem; color: #7A7267; margin-bottom: 12px; }
+    .item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .edit-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .edit-form input {
+      padding: 6px 10px; border: 1.5px solid #E5E0D9; border-radius: 8px;
+      font-family: 'DM Sans', sans-serif; font-size: .8rem; flex: 1; min-width: 100px;
+    }
+    .edit-form input:focus { outline: none; border-color: #C8733A; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #7A7267; }
+    .empty-state p { font-size: 1rem; font-weight: 300; }
+    .back-link { display: inline-block; margin-top: 20px; color: #C8733A; text-decoration: none; font-size: .85rem; }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a href="/" class="back-link">&larr; 返回首页</a>
+  <h1>衣物库</h1>
+  <p class="subtitle">管理你的服装，AI 自动识别分类</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="card">
+    <form class="upload-form" method="post" action="{{ url_for('wardrobe.upload') }}" enctype="multipart/form-data">
+      <input type="file" name="clothing" accept="image/*" required>
+      <button type="submit" class="btn btn-primary">上传 + AI 识别</button>
+    </form>
+  </div>
+
+  {% if items %}
+  <div class="item-grid">
+    {% for item in items %}
+    <div class="item-card">
+      <img class="item-preview"
+           src="{{ url_for('static', filename='uploads/' ~ current_user.id|string ~ '/' ~ item.filename) }}"
+           alt="{{ item.display_category() }}">
+      <div class="item-category">{{ item.display_category() }}</div>
+      <div class="item-date">{{ item.uploaded_at.strftime('%m-%d %H:%M') if item.uploaded_at else '' }}</div>
+      <div class="item-actions">
+        <form class="edit-form" method="post" action="{{ url_for('wardrobe.edit', item_id=item.id) }}">
+          <input type="text" name="manual_category" value="{{ item.manual_category or '' }}"
+                 placeholder="修改分类">
+          <button type="submit" class="btn btn-sm btn-outline">更新</button>
+        </form>
+        <form method="post" action="{{ url_for('wardrobe.delete', item_id=item.id) }}"
+              onsubmit="return confirm('确定删除这件衣物？')">
+          <button type="submit" class="btn btn-sm btn-danger">删除</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty-state">
+    <p>还没有衣物，上传一张服装图片开始吧</p>
+  </div>
+  {% endif %}
+</div>
+</body>
+</html>
