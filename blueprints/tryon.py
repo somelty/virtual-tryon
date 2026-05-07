@@ -36,6 +36,9 @@ def try_on(clothing_id):
     result_dir = os.path.join(current_app.config['RESULT_FOLDER'], str(current_user.id))
     os.makedirs(result_dir, exist_ok=True)
     result_path = os.path.join(result_dir, result_filename)
+    # RGBA 不能存为 JPEG，转为 RGB 或存为 PNG
+    if result.mode == 'RGBA':
+        result = result.convert('RGB')
     result.save(result_path)
 
     return redirect(url_for('main.index', result=f'{current_user.id}/{result_filename}'))
