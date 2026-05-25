@@ -1,2 +1,73 @@
+# Python 相关
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+*.tar.gz
+
+# 虚拟环境
+venv/
+.env/
+.venv/
+env/
+ENV/
+
+# 测试缓存
+.pytest_cache/
+.coverage
+htmlcov/
+
+# VS Code 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude / OpenWolf 缓存
+.claude/
+.wolf/
+
+# 数据库与模型文件
+*.db
+*.sqlite
+*.sqlite3
+*.pth
+*.pt
+*.onnx
+*.h5
+*.pkl
+*.npy
+*.npz
+
+# 生成的图片/文件
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+
+# 环境变量与密钥
+.env
+.env.local
+.env.*.local
+
+# 日志与临时文件
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 文档与旧文件
+docs/
+app_old.py
