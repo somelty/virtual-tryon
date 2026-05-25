@@ -1,0 +1,7 @@
+[MASTER]
+disable=missing-docstring,
+        f-string-without-interpolation,
+        no-member
+
+[TYPECHECK]
+ignored-modules=cv2,numpy,mediapipe

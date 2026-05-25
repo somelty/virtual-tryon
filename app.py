@@ -1,4 +1,5 @@
-from flask import Flask
+import os
+from flask import Flask, send_from_directory
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from config import Config
@@ -7,7 +8,7 @@ from models import db
 bcrypt = Bcrypt()
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
-login_manager.login_message = '请先登录。'
+login_manager.login_message = None
 
 
 @login_manager.user_loader
@@ -28,7 +29,6 @@ def create_app(config_class=Config):
     csrf = CSRFProtect()
     csrf.init_app(app)
 
-    import os
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['RESULT_FOLDER'], exist_ok=True)
 
@@ -40,6 +40,12 @@ def create_app(config_class=Config):
     app.register_blueprint(wardrobe_bp)
     from blueprints.tryon import tryon_bp
     app.register_blueprint(tryon_bp)
+
+    # 浏览器会自动请求 /favicon.ico，此路由将其指向 static 目录
+    @app.route('/favicon.ico')
+    def favicon():
+        return send_from_directory(os.path.join(app.root_path, 'static'),
+                                   'favicon.ico')
 
     with app.app_context():
         db.create_all()

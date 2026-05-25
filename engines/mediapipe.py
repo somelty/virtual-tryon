@@ -2,13 +2,15 @@ import os
 import numpy as np
 import cv2
 from PIL import Image
-from engines.base import TryOnEngine
+from rembg import remove
+from engines.base import TryOnEngine, crop_to_content, uniform_fit
 
 # MediaPipe 0.10.x 新 API 模型路径
 _MODEL_PATH = os.path.join(os.path.expanduser('~'), '.cache', 'mediapipe',
                            'pose_landmarker_lite.task')
 
 
+# 继承 TryOnEngine 抽象类，要实现 composite 的方法
 class MediaPipeEngine(TryOnEngine):
     """MediaPipe Pose 关键点引擎（v0.10.x tasks API）"""
 
@@ -24,6 +26,7 @@ class MediaPipeEngine(TryOnEngine):
     def __init__(self):
         self._landmarker = None
 
+    # 懒加载 MediaPipe 模型，第一次调用时才加载，加载失败后不再尝试加载，避免重复报错
     @property
     def landmarker(self):
         if self._landmarker is None and os.path.exists(_MODEL_PATH):
@@ -44,7 +47,10 @@ class MediaPipeEngine(TryOnEngine):
         return self._landmarker
 
     def _detect_keypoints(self, image):
-        """返回 (keypoints_dict, image_width, image_height) 或 (None, None, None)"""
+        """ 把图片传给 MediaPipe
+            AI 识别全身关键点，坐标keypoints_dict：肩膀、腰、手腕、脚踝
+            返回 (keypoints_dict, image_width, image_height) 或 (None, None, None)
+        """
         if not self.landmarker or self.landmarker is False:
             return None, None, None
 
@@ -69,38 +75,45 @@ class MediaPipeEngine(TryOnEngine):
         except Exception:
             return None, None, None
 
+# 根据关键点和类别计算衣物放置区域，返回 (x1, y1, x2, y2) 或 [(x1, y1, x2, y2), ...] 或 None
     def _get_region_for_category(self, keypoints, category, img_w, img_h):
 
         def midpoint(a, b):
             return ((a[0] + b[0]) // 2, (a[1] + b[1]) // 2)
 
-        upper_categories = {'T-shirt/top', 'Pullover', 'Shirt', 'Coat', 'Dress'}
+        upper_categories = {'T-shirt/top',
+                            'Pullover', 'Shirt', 'Coat', 'Dress'}
         lower_categories = {'Trouser'}
         shoe_categories = {'Sandal', 'Sneaker', 'Ankle boot'}
         bag_categories = {'Bag'}
 
         if category in upper_categories:
             if self.LEFT_SHOULDER in keypoints and self.RIGHT_SHOULDER in keypoints:
-                shoulder_mid = midpoint(keypoints[self.LEFT_SHOULDER], keypoints[self.RIGHT_SHOULDER])
+                shoulder_mid = midpoint(
+                    keypoints[self.LEFT_SHOULDER], keypoints[self.RIGHT_SHOULDER])
                 x1 = max(0, shoulder_mid[0] - 120)
                 x2 = min(img_w, shoulder_mid[0] + 120)
                 y1 = max(0, shoulder_mid[1] - 20)
                 if self.LEFT_HIP in keypoints and self.RIGHT_HIP in keypoints:
-                    hip_mid = midpoint(keypoints[self.LEFT_HIP], keypoints[self.RIGHT_HIP])
+                    hip_mid = midpoint(
+                        keypoints[self.LEFT_HIP], keypoints[self.RIGHT_HIP])
                     y2 = hip_mid[1]
                 else:
                     y2 = min(img_h, y1 + 250)
                 return (x1, y1, x2, y2)
+
             return (220, 150, 380, 330) if category != 'Dress' else (210, 150, 390, 600)
 
         if category in lower_categories:
             if all(k in keypoints for k in [self.LEFT_HIP, self.RIGHT_HIP]):
-                hip_mid = midpoint(keypoints[self.LEFT_HIP], keypoints[self.RIGHT_HIP])
+                hip_mid = midpoint(
+                    keypoints[self.LEFT_HIP], keypoints[self.RIGHT_HIP])
                 x1 = max(0, hip_mid[0] - 100)
                 x2 = min(img_w, hip_mid[0] + 100)
                 y1 = hip_mid[1]
                 if self.LEFT_ANKLE in keypoints and self.RIGHT_ANKLE in keypoints:
-                    ankle_mid = midpoint(keypoints[self.LEFT_ANKLE], keypoints[self.RIGHT_ANKLE])
+                    ankle_mid = midpoint(
+                        keypoints[self.LEFT_ANKLE], keypoints[self.RIGHT_ANKLE])
                     y2 = ankle_mid[1]
                 else:
                     y2 = min(img_h, y1 + 350)
@@ -122,15 +135,24 @@ class MediaPipeEngine(TryOnEngine):
             if self.LEFT_WRIST in keypoints:
                 w = keypoints[self.LEFT_WRIST]
                 return (max(0, w[0] - 60), max(0, w[1] - 40),
-                       min(img_w, w[0] + 60), min(img_h, w[1] + 80))
+                        min(img_w, w[0] + 60), min(img_h, w[1] + 80))
             return (140, 280, 220, 400)
 
         return None
 
+# 将衣物合成到用户照片上，返回 RGBA 图片
     def composite(self, user_photo, clothing, category):
         user_photo = user_photo.convert("RGBA")
-        clothing = clothing.convert("RGBA")
-        clothing.putalpha(200)
+        # 将人物照最大边缩至 800px，确保关键点检测在一致尺度下进行
+        max_dim = 800
+        if max(user_photo.width, user_photo.height) > max_dim:
+            scale = max_dim / max(user_photo.width, user_photo.height)
+            user_photo = user_photo.resize(
+                (int(user_photo.width * scale), int(user_photo.height * scale)),
+                Image.LANCZOS,
+            )
+        clothing = remove(clothing).convert("RGBA")  # rembg 移除背景
+        clothing = crop_to_content(clothing)  # 裁剪到衣物实际边界框，消除图片内留白导致的贴合错位
 
         keypoints, img_w, img_h = self._detect_keypoints(user_photo)
 
@@ -138,7 +160,8 @@ class MediaPipeEngine(TryOnEngine):
             from engines.simple import SimpleEngine
             return SimpleEngine().composite(user_photo, clothing, category)
 
-        region = self._get_region_for_category(keypoints, category, img_w, img_h)
+        region = self._get_region_for_category(
+            keypoints, category, img_w, img_h)
 
         if region is None:
             return user_photo
@@ -154,13 +177,4 @@ class MediaPipeEngine(TryOnEngine):
         return user_photo
 
     def _affine_fit(self, img, region):
-        tw = region[2] - region[0]
-        th = region[3] - region[1]
-        if tw <= 0 or th <= 0:
-            return img
-        src_pts = np.float32([[0, 0], [img.width, 0], [0, img.height]])
-        dst_pts = np.float32([[0, 0], [tw, 0], [0, th]])
-        matrix = cv2.getAffineTransform(src_pts, dst_pts)
-        warped = cv2.warpAffine(np.array(img), matrix, (tw, th),
-                                flags=cv2.INTER_LANCZOS4)
-        return Image.fromarray(warped, 'RGBA')
+        return uniform_fit(img, region)

@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}FitAI{% endblock %} · 智能试衣</title>
+  <title>{% block title %}FitAI{% endblock %}{% block title_suffix %} · 智能试衣{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -363,6 +364,49 @@
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+
+    /* ─────────────────────────────────────────────
+       FILE INPUT
+    ───────────────────────────────────────────── */
+    .file-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .file-input-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+    }
+    .file-input-label {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .78rem;
+      font-weight: 500;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .file-input-label:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .file-input-name {
+      font-size: .78rem;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* ─────────────────────────────────────────────

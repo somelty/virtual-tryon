@@ -1,61 +1,157 @@
-{% extends "base.html" %}
-{% block title %}试穿{% endblock %}
-{% block content %}
-<div class="hero" style="text-align:center; padding:40px 24px 20px;">
-  <h1 style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:600;">智能虚拟试穿</h1>
-  <p style="color:var(--text-secondary);max-width:460px;margin:8px auto 0;">上传你的照片和衣物，AI 自动识别分类并模拟试穿效果</p>
+{% extends "base.html" %} {% block title %}FitAI{% endblock %} {% block content
+%}
+<div class="hero" style="text-align: center; padding: 40px 24px 20px">
+  <h1
+    style="
+      font-family: &quot;Playfair Display&quot;, serif;
+      font-size: 2.2rem;
+      font-weight: 600;
+    "
+  >
+    智能虚拟试穿
+  </h1>
+  <p style="color: var(--text-secondary); max-width: 460px; margin: 8px auto 0">
+    上传你的照片和衣物，AI 自动识别分类并模拟试穿效果
+  </p>
 </div>
 
 <div class="container">
   <div class="grid grid-2">
-
     <!-- Left: Photo + Clothing Selection -->
     <div>
       <!-- User Photos -->
-      <div class="card" style="margin-bottom:20px;">
+      <div class="card" style="margin-bottom: 20px">
         <div class="card-title">我的试穿照片</div>
         {% if photos %}
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-            {% for photo in photos %}
-              {% if photo.is_active %}
-              <div style="position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:2px solid var(--accent);">
-              {% else %}
-              <div style="position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:2px solid var(--border);">
-              {% endif %}
-                <img src="{{ url_for('static', filename='uploads/' + current_user.id|string + '/' + photo.filename) }}" style="width:100%;height:100%;object-fit:cover;">
-                {% if not photo.is_active %}
-                <form method="post" action="{{ url_for('main.set_active_photo', photo_id=photo.id) }}" style="position:absolute;inset:0;">
-                  <button type="submit" style="width:100%;height:100%;background:transparent;border:none;cursor:pointer;" title="设为当前"></button>
-                </form>
-                {% endif %}
-              </div>
-            {% endfor %}
+        <div
+          style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px"
+        >
+          {% for photo in photos %}
+          <div
+            style="position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border: 2px solid {% if photo.is_active %}var(--accent){% else %}var(--border){% endif %};"
+          >
+            <img
+              src="{{ url_for('static', filename='uploads/' + current_user.id|string + '/' + photo.filename) }}"
+              style="width: 100%; height: 100%; object-fit: cover"
+            />
+            {% if not photo.is_active %}
+            <form
+              method="post"
+              action="{{ url_for('main.set_active_photo', photo_id=photo.id) }}"
+              style="position: absolute; inset: 0"
+            >
+              <button
+                type="submit"
+                style="
+                  width: 100%;
+                  height: 100%;
+                  background: transparent;
+                  border: none;
+                  cursor: pointer;
+                "
+                title="设为当前"
+              ></button>
+            </form>
+            {% endif %}
+            <!-- 删除按钮：每张照片右上角 -->
+            <form
+              method="post"
+              action="{{ url_for('main.delete_photo', photo_id=photo.id) }}"
+              style="position: absolute; top: 2px; right: 2px"
+              onsubmit="return confirm('确定删除这张照片？')"
+            >
+              <button
+                type="submit"
+                title="删除"
+                style="
+                  width: 18px; height: 18px; border-radius: 50%;
+                  background: rgba(0,0,0,.45); color: white; border: none;
+                  font-size: 10px; line-height: 1; cursor: pointer;
+                  display: flex; align-items: center; justify-content: center;
+                "
+              >✕</button>
+            </form>
           </div>
+          {% endfor %}
+        </div>
         {% else %}
-          <div class="empty-state" style="padding:24px;">
-            <p style="font-size:.85rem;">还没有上传照片</p>
-          </div>
+        <div class="empty-state" style="padding: 24px">
+          <p style="font-size: 0.85rem">还没有上传照片</p>
+        </div>
         {% endif %}
-        <form method="post" action="{{ url_for('main.upload_photo') }}" enctype="multipart/form-data">
-          <div style="display:flex;gap:8px;">
-            <input type="file" name="photo" accept="image/*" required style="flex:1;font-size:.82rem;">
-            <button type="submit" class="btn btn-accent btn-sm">上传照片</button>
+        <form
+          method="post"
+          action="{{ url_for('main.upload_photo') }}"
+          enctype="multipart/form-data"
+        >
+          <div style="display: flex; gap: 8px; align-items: center">
+            <div class="file-input-wrapper">
+              <label class="file-input-label" for="photo-input">选择文件</label>
+              <input
+                id="photo-input"
+                type="file"
+                name="photos"
+                accept="image/*"
+                multiple
+                required
+                class="file-input-hidden"
+                onchange="
+                  var n = this.files.length;
+                  this.parentNode.querySelector(
+                    '.file-input-name',
+                  ).textContent = n ? n + ' 个文件已选择' : '未选择文件'
+                "
+              />
+              <span class="file-input-name">未选择文件</span>
+            </div>
+            <button type="submit" class="btn btn-accent btn-sm">
+              上传照片
+            </button>
           </div>
         </form>
-        {% if active_photo %}<p style="font-size:.75rem;color:var(--accent);margin-top:6px;">✓ 当前试穿底图已就绪</p>{% endif %}
+        {% if active_photo %}
+        <p style="font-size: 0.75rem; color: var(--accent); margin-top: 6px">
+          ✓ 当前试穿底图已就绪
+        </p>
+        {% endif %}
       </div>
 
       <!-- Clothing Selection -->
       <div class="card">
         <div class="card-title">选择衣物</div>
-        <div id="clothing-selector" style="display:flex;gap:10px;flex-wrap:wrap;max-height:200px;overflow-y:auto;margin-bottom:16px;">
-          <p style="font-size:.82rem;color:var(--text-secondary);">加载中...</p>
+        <div
+          id="clothing-selector"
+          style="
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+          "
+        >
+          <p style="font-size: 0.82rem; color: var(--text-secondary)">
+            加载中...
+          </p>
         </div>
-        <form method="post" id="tryon-form" style="display:none;">
-          <button type="submit" class="btn btn-accent" style="width:100%;">立即试衣</button>
+        <form method="post" id="tryon-form" style="display: none">
+          <button type="submit" class="btn btn-accent" style="width: 100%">
+            立即试衣
+          </button>
         </form>
-        <p style="text-align:center;font-size:.8rem;color:var(--text-secondary);margin-top:8px;">
-          在<a href="{{ url_for('wardrobe.index') }}" style="color:var(--accent);">衣橱</a>中上传更多衣物
+        <p
+          style="
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+          "
+        >
+          在<a
+            href="{{ url_for('wardrobe.index') }}"
+            style="color: var(--accent)"
+            >衣橱</a
+          >中上传更多衣物
         </p>
       </div>
     </div>
@@ -65,55 +161,71 @@
       <div class="card">
         <div class="card-title">试穿效果</div>
         {% if result_filename %}
-          <div style="border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);">
-            <img src="{{ url_for('static', filename='results/' + result_filename) }}" style="width:100%;" alt="试穿效果">
-          </div>
+        <div
+          style="
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--border);
+          "
+        >
+          <img
+            src="{{ url_for('static', filename='results/' + result_filename) }}"
+            style="width: 100%"
+            alt="试穿效果"
+          />
+        </div>
         {% else %}
-          <div class="empty-state">
-            <div class="empty-state-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="var(--text-secondary)" stroke-width="1.8" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <p>选择衣物后点击试衣<br>效果将显示在这里</p>
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
+                stroke="var(--text-secondary)"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
           </div>
+          <p>选择衣物后点击试衣<br />效果将显示在这里</p>
+        </div>
         {% endif %}
       </div>
     </div>
-
   </div>
 </div>
-{% endblock %}
-
-{% block head %}
+{% endblock %} {% block head %}
 <script>
-// Load wardrobe items via AJAX
-document.addEventListener('DOMContentLoaded', () => {
-  fetch('/wardrobe/api/wardrobe-items')
-    .then(r => r.json())
-    .then(data => {
-      const items = data.items;
-      const container = document.getElementById('clothing-selector');
-      const form = document.getElementById('tryon-form');
-      if (items.length === 0) {
-        container.innerHTML = '<p style="font-size:.82rem;color:var(--text-secondary);">衣橱为空，请先上传衣物</p>';
-        return;
-      }
-      container.innerHTML = '';
-      items.forEach(item => {
-        const div = document.createElement('div');
-        div.style.cssText = 'width:72px;height:72px;border-radius:10px;overflow:hidden;border:2px solid var(--border);cursor:pointer;position:relative;';
-        div.innerHTML = `<img src="/static/uploads/${item.user_id}/${item.filename}" style="width:100%;height:100%;object-fit:cover;">
+  // Load wardrobe items via AJAX
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("/wardrobe/api/wardrobe-items")
+      .then((r) => r.json())
+      .then((data) => {
+        const items = data.items;
+        const container = document.getElementById("clothing-selector");
+        const form = document.getElementById("tryon-form");
+        if (items.length === 0) {
+          container.innerHTML =
+            '<p style="font-size:.82rem;color:var(--text-secondary);">衣橱为空，请先上传衣物</p>';
+          return;
+        }
+        container.innerHTML = "";
+        items.forEach((item) => {
+          const div = document.createElement("div");
+          div.style.cssText =
+            "width:72px;height:72px;border-radius:10px;overflow:hidden;border:2px solid var(--border);cursor:pointer;position:relative;";
+          div.innerHTML = `<img src="/static/uploads/${item.user_id}/${item.filename}" style="width:100%;height:100%;object-fit:cover;">
           <span style="position:absolute;bottom:2px;left:2px;right:2px;font-size:.55rem;background:rgba(0,0,0,.6);color:white;padding:1px 4px;border-radius:4px;text-align:center;">${item.display_category}</span>`;
-        div.addEventListener('click', () => {
-          document.querySelectorAll('#clothing-selector > div').forEach(d => d.style.borderColor = 'var(--border)');
-          div.style.borderColor = 'var(--accent)';
-          form.style.display = 'block';
-          form.action = '/tryon/' + item.id;
+          div.addEventListener("click", () => {
+            document
+              .querySelectorAll("#clothing-selector > div")
+              .forEach((d) => (d.style.borderColor = "var(--border)"));
+            div.style.borderColor = "var(--accent)";
+            form.style.display = "block";
+            form.action = "/tryon/" + item.id;
+          });
+          container.appendChild(div);
         });
-        container.appendChild(div);
       });
-    });
-});
+  });
 </script>
 {% endblock %}

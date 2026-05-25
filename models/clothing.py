@@ -8,7 +8,7 @@ class Clothing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
-    category = db.Column(db.String(50), default='')
+    category = db.Column(db.String(50), default='')  # 传给 AI 的分类结果：上衣、裤子、鞋子、包等
     manual_category = db.Column(db.String(50), nullable=True)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 

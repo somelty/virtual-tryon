@@ -20,7 +20,7 @@ class TestPhotoUpload:
         client, user = logged_in_user
         fake_img = _make_fake_image()
         response = client.post('/upload-photo', data={
-            'photo': (fake_img, 'myphoto.png')
+            'photos': (fake_img, 'myphoto.png')
         }, content_type='multipart/form-data', follow_redirects=True)
         assert response.status_code == 200
         with app.app_context():
