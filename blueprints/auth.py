@@ -55,9 +55,7 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        # 模拟发送验证邮件，实际项目中应集成邮件服务，这里为了简化开发流程，直接在控制台输出验证链接，方便开发和测试
-        print(
-            f'\n[DEV] 邮箱验证链接: http://localhost:5000/verify/{user.verification_token}\n')
+        send_verification_email(user, user.verification_token)
         flash('注册成功！验证邮件已发送（开发模式请查看控制台）', 'success')
         return redirect(url_for('auth.login'))
 
